@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "name": "iPhone 14",
+    "platform": "Amazon",
+    "price": 59999,
+    "history": [65000, 63000, 61000, 59999]
+  },
+  {
+    "id": 2,
+    "name": "iPhone 14",
+    "platform": "Flipkart",
+    "price": 58999,
+    "history": [64000, 62000, 60000, 58999]
+  },
+  {
+    "id": 3,
+    "name": "iPhone 14",
+    "platform": "Croma",
+    "price": 60999,
+    "history": [66000, 64000, 62000, 60999]
+  }
+]

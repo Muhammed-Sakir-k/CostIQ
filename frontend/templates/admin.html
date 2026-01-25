@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SmartPrice Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+        body {
+            margin: 0;
+            background: #0f172a;
+            color: #e5e7eb;
+        }
+
+        /* TOP BAR */
+        .topbar {
+            height: 60px;
+            background: #020617;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .menu-btn {
+            font-size: 22px;
+            cursor: pointer;
+            margin-right: 15px;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            position: fixed;
+            left: -260px;
+            top: 0;
+            width: 260px;
+            height: 100%;
+            background: #020617;
+            padding: 20px;
+            transition: 0.3s;
+            z-index: 10;
+        }
+
+        .sidebar.active {
+            left: 0;
+        }
+
+        .sidebar h2 {
+            margin-bottom: 30px;
+        }
+
+        .sidebar a {
+            display: block;
+            color: #cbd5f5;
+            text-decoration: none;
+            margin: 15px 0;
+        }
+
+        .sidebar a:hover {
+            color: #38bdf8;
+        }
+
+        /* MAIN CONTENT */
+        .content {
+            padding: 30px;
+        }
+
+        /* KPI CARDS */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card h3 {
+            margin: 0;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .card p {
+            font-size: 28px;
+            margin-top: 10px;
+        }
+
+        /* CHART CONTAINER */
+        .chart-box {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            width: 600px;
+            max-width: 100%;
+        }
+
+        /* CHANGE PASSWORD */
+        .password-box input, .password-box button {
+            width: 100%;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            border: none;
+        }
+
+        .password-box button {
+            background: #38bdf8;
+            cursor: pointer;
+        }
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-box {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 12px;
+            height: 300px;
+        }
+
+        .chart-box canvas {
+            max-height: 220px;
+        }
+
+        .table-box {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        th {
+            color: #94a3b8;
+        }
+        #overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            display: none;
+            z-index: 5;
+        }
+
+        #overlay.active {
+            display: block;
+        }
+        .big-number {
+            font-size: 28px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        .card small {
+            color: #94a3b8;
+        }
+
+        .big-number {
+            font-size: 30px;
+            font-weight: 700;
+            margin: 6px 0 10px;
+        }
+        .card canvas {
+            height: 260px !important;
+            max-height: 260px;
+        }
+
+        .card {
+            overflow: hidden;
+        }
+
+
+    </style>
+</head>
+
+<body>
+<div id="overlay" onclick="closeMenu()"></div>
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+    <h2>SmartPrice</h2>
+    <a href="#">Dashboard</a>
+    <a href="/admin/export/csv">Export CSV</a>
+
+    <h4>Change Password</h4>
+    <div class="password-box">
+        <input id="oldPwd" type="password" placeholder="Old password">
+        <input id="newPwd" type="password" placeholder="New password">
+        <button onclick="changePassword()">Update</button>
+        <p id="pwdMsg"></p>
+    </div>
+
+    <a href="/admin/logout" style="color:#f87171;margin-top:20px;">Logout</a>
+</div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+    <span class="menu-btn" onclick="toggleMenu()">☰</span>
+    <h3>Admin Dashboard</h3>
+</div>
+
+<!-- MAIN -->
+<div class="content">
+
+    <!-- KPI CARDS -->
+    
+    
+    <div class="cards">
+        <div class="card">
+            <h3>Total Clicks</h3>
+            <p id="totalClicks">–</p>
+        </div>
+        <div class="card">
+            <h3>Top Platform</h3>
+            <p id="topPlatform">–</p>
+        </div>
+
+    </div>
+
+    <!-- CHART ROW -->
+    <div class="charts-row">
+        <div class="grid-2">
+    <!-- Clicks by Platform -->
+    <div class="card">
+        <h3>Clicks by Platform</h3>
+        <canvas id="platformChart"></canvas>
+    </div>
+    <div class="card">
+    <h3>Click Heatmap (Hourly)</h3>
+    <canvas id="heatmapChart"></canvas>
+    </div>
+
+    <!-- Visitors -->
+    <div class="card">
+        <h3>Visitors</h3>
+        <div class="big-number" id="visitorCount">–</div>
+        <small>Total unique visitors</small>
+
+        <hr style="opacity:0.1">
+
+        <div class="big-number" id="todayVisitorCount">–</div>
+        <small>Visitors today</small>
+    </div>
+</div>
+
+
+        
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-box">
+        <h4>Click Details</h4>
+        <table id="clickTable">
+            <thead>
+                <tr>
+                    <th>Platform</th>
+                    <th>Clicks</th>
+                    <th>Last Price</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script src="/static/js/admin.js"></script>
+
+<script>
+function toggleMenu() {
+    document.getElementById("sidebar").classList.toggle("active");
+    document.getElementById("overlay").classList.toggle("active");
+}
+
+function closeMenu() {
+    document.getElementById("sidebar").classList.remove("active");
+    document.getElementById("overlay").classList.remove("active");
+}
+
+</script>
+
+</body>
+</html>
