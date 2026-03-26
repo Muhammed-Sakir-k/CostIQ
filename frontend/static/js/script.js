@@ -51,7 +51,6 @@ function searchProduct() {
     const query = document.getElementById("search").value.trim();
     if (!query) return;
 
-    // show results section
     showSection("resultsSection");
 
     fetch(`http://127.0.0.1:5000/search?q=${encodeURIComponent(query)}`)
@@ -61,24 +60,52 @@ function searchProduct() {
 
             if (!data || data.length === 0) return;
 
-            const table = document.getElementById("result");
-            table.innerHTML = "";
+            const container = document.getElementById("result");
+            container.innerHTML = "";
 
-            const minPrice = Math.min(...data.map(item => item.price));
+            // 🔥 Sort lowest price first (extra safety)
+            data.sort((a, b) => a.price - b.price);
+
+            let sliderHTML = `
+                <div class="swiper mySwiper">
+                    <div class="swiper-wrapper">
+            `;
 
             data.forEach(item => {
-                const isBest = item.price === minPrice;
+                sliderHTML += `
+                    <div class="swiper-slide product-card">
+                        <img src="${item.thumbnail || ''}" 
+                             onerror="this.src='https://via.placeholder.com/200'"
+                             class="product-img" />
 
-                table.innerHTML += `
-                    <tr class="${isBest ? 'best-price' : ''}">
-                        <td>${item.name}</td>
-                        <td>${item.platform}</td>
-                        <td>
-                            ₹${item.price}
-                            ${isBest ? '<span class="badge">Best Price</span>' : ''}
-                        </td>
-                    </tr>
+                        <h3>${item.name}</h3>
+                        <p>${item.platform}</p>
+
+                        <h2>₹${item.price}</h2>
+
+                        <div class="rating ${item.color}">
+                            ${item.score}/10
+                        </div>
+                    </div>
                 `;
+            });
+
+            sliderHTML += `
+                    </div>
+                    <div class="swiper-button-next"></div>
+                    <div class="swiper-button-prev"></div>
+                </div>
+            `;
+
+            container.innerHTML = sliderHTML;
+
+            // 🔥 Initialize Swiper
+            new Swiper(".mySwiper", {
+                navigation: {
+                    nextEl: ".swiper-button-next",
+                    prevEl: ".swiper-button-prev",
+                },
+                loop: false,
             });
 
             // 🔔 ALERT CHECK
@@ -235,3 +262,51 @@ function runPriceAlertCheck(data, alertPrice) {
         });
     }
 }
+fetch("/api/buy-decision")
+  .then(res => res.json())
+  .then(data => {
+    const box = document.getElementById("buyDecisionBox");
+    box.innerHTML = ""; // clear old content
+
+    data.forEach(item => {
+      const div = document.createElement("div");
+      div.className = `decision ${item.action.toLowerCase()}`;
+      div.innerHTML = `
+        <span>${item.action} — ${item.platform}</span>
+        <p>${item.reason}</p>
+      `;
+      box.appendChild(div);
+    });
+  });
+fetch("/api/price-history")
+  .then(res => res.json())
+  .then(data => {
+    new Chart(document.getElementById("priceChart"), {
+      type: "line",
+      data: {
+        labels: data.labels,
+        datasets: [{
+          label: "Best Price Trend",
+          data: data.prices,
+          borderColor: "#2563eb",
+          backgroundColor: "rgba(37,99,235,0.1)",
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4
+        }]
+      },
+      options: {
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            ticks: {
+              callback: value => "₹" + value
+            }
+          }
+        }
+      }
+    });
+  });
+

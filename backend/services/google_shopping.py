@@ -3,6 +3,7 @@ import os
 
 SERP_API_KEY = os.getenv("SERPAPI_KEY")
 
+
 def fetch_google_shopping_prices(query):
     if not SERP_API_KEY or not query:
         return []
@@ -22,10 +23,13 @@ def fetch_google_shopping_prices(query):
             timeout=10
         )
 
+        response.raise_for_status()
         data = response.json()
+
         results = []
 
         for item in data.get("shopping_results", []):
+
             price_str = item.get("price")
             source = item.get("source")
 
@@ -35,26 +39,38 @@ def fetch_google_shopping_prices(query):
                 or item.get("redirect_link")
             )
 
-            if price_str and source and link:
-                try:
-                    price = int(
-                        price_str.replace("₹", "")
-                        .replace(",", "")
-                        .strip()
-                    )
+            thumbnail = (
+                item.get("thumbnail")
+                or item.get("image")
+                or ""
+            )
 
-                    if link.startswith("/"):
-                        link = "https://www.google.com" + link
+            # Ensure required fields exist
+            if not price_str or not source or not link:
+                continue
 
-                    results.append({
-                        "name": query,
-                        "platform": source,
-                        "price": price,
-                        "link": link
-                    })
+            try:
+                # Clean price string safely
+                price = int(
+                    price_str.replace("₹", "")
+                    .replace(",", "")
+                    .strip()
+                )
 
-                except ValueError:
-                    continue
+                # Fix relative Google redirect links
+                if link.startswith("/"):
+                    link = "https://www.google.com" + link
+
+                results.append({
+                    "name": query,
+                    "platform": source,
+                    "price": price,
+                    "link": link,
+                    "thumbnail": thumbnail
+                })
+
+            except ValueError:
+                continue
 
         return results
 

@@ -16,6 +16,7 @@ from datetime import timedelta, datetime ,timezone
 from collections import defaultdict
 from datetime import date
 from smart_alternatives import recommend_alternatives
+from werkzeug.security import generate_password_hash
 
 visitor_log = defaultdict(set)  # date -> set of IPs
 
@@ -47,7 +48,8 @@ def admin_required():
 
 CORS(app) 
 # Load demo data
-with open("backend/data/demo_data.json") as f:
+with open("data/demo_data.json") as f:
+
     products = json.load(f)
 
     
@@ -76,20 +78,36 @@ def search():
     real_results = fetch_google_shopping_prices(query)
 
     if real_results:
-        # 🔥 SAVE TO DB
-        conn = get_conn()
-        cur = conn.cursor()
+
+        # 🔹 Convert price to int safely
         for item in real_results:
-            cur.execute(
-                "INSERT INTO price_history (product, platform, price) VALUES (?, ?, ?)",
-                (item["name"], item["platform"], item["price"])
-            )
-        conn.commit()
-        conn.close()
+            try:
+                item["price"] = int(str(item["price"]).replace("₹", "").replace(",", ""))
+            except:
+                item["price"] = 0
+
+        # 🔹 Sort lowest first
+        real_results.sort(key=lambda x: x["price"])
+
+        avg_price = sum(item["price"] for item in real_results) / len(real_results)
+
+        # 🔹 Add score + color
+        for item in real_results:
+            price = item["price"]
+
+            if price == real_results[0]["price"]:
+                item["score"] = 10
+                item["color"] = "green"
+            elif price <= avg_price:
+                item["score"] = 6
+                item["color"] = "orange"
+            else:
+                item["score"] = 3
+                item["color"] = "red"
 
         return jsonify(real_results)
 
-    # fallback (optional)
+    # 🔹 fallback (optional)
     filtered = [p for p in products if query.lower() in p["name"].lower()]
     return jsonify(filtered)
 
@@ -534,8 +552,91 @@ def smart_alternatives():
     alternatives = recommend_alternatives(product, price)
     return jsonify(alternatives)
 
+from werkzeug.security import generate_password_hash
+
+def create_default_admin():
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS admin_user (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            password_hash TEXT
+        )
+    """)
+
+    cur.execute(
+        "SELECT * FROM admin_user WHERE username=?",
+        ("admin",)
+    )
+
+    if not cur.fetchone():
+        cur.execute(
+            "INSERT INTO admin_user (username, password_hash) VALUES (?, ?)",
+            ("admin", generate_password_hash("admin123"))
+        )
+        conn.commit()
+        print("✅ Default admin created: admin / admin123")
+
+    conn.close()
+
+@app.route("/api/buy-decision")
+def buy_decision():
+    # 🔁 Use the SAME data source as the table
+    prices = fetch_google_shopping_prices("iphone 14")
+    # or: prices = demo_data
+
+    # Example structure expected:
+    # prices = [
+    #   {"platform": "Ovantica.com", "price": 26999},
+    #   {"platform": "Maple Store", "price": 34999},
+    #   ...
+    # ]
+
+    all_prices = [p["price"] for p in prices]
+
+    min_price = min(all_prices)
+    max_price = max(all_prices)
+    avg_price = sum(all_prices) / len(all_prices)
+
+    decisions = []
+
+    for p in prices:
+        price = p["price"]
+
+        if price == min_price:
+            action = "BUY"
+            reason = "Lowest price among all platforms"
+        elif price >= max_price * 0.95:
+            action = "AVOID"
+            reason = "Very high compared to market"
+        elif price <= avg_price:
+            action = "WAIT"
+            reason = "Decent price, may drop further"
+        else:
+            action = "WAIT"
+            reason = "Price above average"
+
+        decisions.append({
+            "platform": p["platform"],
+            "price": price,
+            "action": action,
+            "reason": reason
+        })
+
+    return decisions
+@app.route("/api/price-history")
+def price_history():
+    return {
+        "labels": ["Day 1", "Day 2", "Day 3", "Day 4", "Today"],
+        "prices": [42000, 39500, 38000, 34000, 31666]
+    }
+
+
 
 if __name__ == "__main__":
+    
     app.run(debug=True)
 
 

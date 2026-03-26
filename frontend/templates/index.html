@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="../static/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper/swiper-bundle.min.css"/>
 
     <script>
         window.onload = () => {
@@ -21,7 +22,7 @@
 <header class="main-header">
     <div class="header-left">
         <div class="brand">
-            <span class="brand-name">SmartPrice</span>
+            <span class="brand-name">CostIQ</span>
             <span class="brand-tagline">Compare smart. Buy smart.</span>
         </div>
     </div>
@@ -106,27 +107,16 @@
         <div class="price-column">
             <h3>Price Comparison</h3>
 
-            <div class="price-table-wrapper">
-                <table class="price-table">
-                    <thead>
-                        <tr>
-                            <th>Product</th>
-                            <th>Platform</th>
-                            <th>Price</th>
-                        </tr>
-                    </thead>
-                    <tbody id="result"></tbody>
-                </table>
+            <div class="price-slider-wrapper">
+                <div id="result"></div>
             </div>
         </div>
 
         <!-- RIGHT: BEST TIME TO BUY -->
-        <div class="insight-column">
-            <h3>Best Time to Buy</h3>
-            <div class="insight-scroll">
-                <div id="intelligenceBox">
-                    <p class="placeholder">🔍 Analyzing price trends…</p>
-                </div>
+        <div class="buy-decision-card">
+            <h3>📊 Best Time to Buy</h3>
+
+            <div class="decision-scroll" id="buyDecisionBox">
             </div>
         </div>
 
@@ -165,6 +155,10 @@
         </div>
     </div>
 
+    <p class="graph-insight">
+        📉 Prices are trending downward — this is a good time to buy.
+    </p>
+
 </section>
 
 <footer>
@@ -172,5 +166,7 @@
 </footer>
 
 <script src="../static/js/script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/swiper/swiper-bundle.min.js"></script>
+
 </body>
 </html>
